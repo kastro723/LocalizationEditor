@@ -7,6 +7,7 @@
 
 ---------------------------------------------------------------------------------------------
 ![image](https://github.com/kastro723/LocalizationEditor/assets/55536937/30ea5a25-1d23-4458-bd5d-f3a1bdc7eb84)
+![image](https://github.com/kastro723/LocalizationEditor/assets/55536937/d7f27a70-473d-4e75-9849-4d85b4386e71)
 
 
     [기능설명]
