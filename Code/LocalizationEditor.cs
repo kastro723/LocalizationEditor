@@ -4,6 +4,7 @@ using System.IO;
 using ExcelDataReader;
 using System.Data;
 using System.Text;
+using System.Collections.Generic;
 
 public class LocalizationEditor : EditorWindow
 {
@@ -21,13 +22,13 @@ public class LocalizationEditor : EditorWindow
 
     void OnGUI()
     {
-        GUILayout.Label("Ver. 1.0.0", EditorStyles.boldLabel);
+        GUILayout.Label("Ver. 1.1.0", EditorStyles.boldLabel);
 
         DrawLine();
 
         // 드래그 앤 드롭 영역 생성
         var dragArea = GUILayoutUtility.GetRect(0f, 100f, GUILayout.ExpandWidth(true));
-        GUI.Box(dragArea, "Drag & Drop Excel file here or Click 'Generate Constants Class'");
+        GUI.Box(dragArea, "Drag & Drop Excel file here or Click 'Generate LocalizationKeys Enum Script'");
 
         if (dragArea.Contains(Event.current.mousePosition) && Event.current.type == EventType.DragUpdated)
         {
@@ -54,7 +55,7 @@ public class LocalizationEditor : EditorWindow
         }
 
 
-        if (GUILayout.Button("Generate Constants Class") && !string.IsNullOrEmpty(excelFilePath))
+        if (GUILayout.Button("Generate LocalizationKeys Enum Script") && !string.IsNullOrEmpty(excelFilePath))
         {
             GenerateConstantsClass(excelFilePath);
         }
@@ -80,14 +81,10 @@ public class LocalizationEditor : EditorWindow
     private void GenerateConstantsClass(string path)
     {
         StringBuilder classBuilder = new StringBuilder();
-        classBuilder.AppendLine("using System.Collections;");
-        classBuilder.AppendLine("using System.Collections.Generic;");
-        classBuilder.AppendLine("using UnityEngine;");
+        classBuilder.AppendLine("using System;");
         classBuilder.AppendLine();
-        classBuilder.AppendLine("public class LocalizationConstants");
+        classBuilder.AppendLine("public enum LocalizationKeys");
         classBuilder.AppendLine("{");
-        classBuilder.AppendLine();
-        classBuilder.AppendLine($"    public static string excelFilePath = \"{excelFilePath}\";");
         classBuilder.AppendLine();
 
         using (var stream = File.Open(path, FileMode.Open, FileAccess.Read))
@@ -95,11 +92,15 @@ public class LocalizationEditor : EditorWindow
             using (var reader = ExcelReaderFactory.CreateReader(stream))
             {
                 DataTable table = reader.AsDataSet().Tables[0];
+                List<string> keys = new List<string>();
                 for (int i = 2; i < table.Rows.Count; i++) // 데이터 행 시작 (3행부터)
                 {
-                    string key = table.Rows[i][0].ToString().ToUpper();
-                    string value = table.Rows[i][0].ToString();
-                    classBuilder.AppendLine($"    public const string {key} = \"{value}\";");
+                    string key = table.Rows[i][0].ToString().ToUpper().Replace(" ", "_");
+                    if (!keys.Contains(key)) // enum에서 중복 키 방지
+                    {
+                        keys.Add(key);
+                        classBuilder.AppendLine($"    {key},");
+                    }
                 }
             }
         }
@@ -109,7 +110,7 @@ public class LocalizationEditor : EditorWindow
         classFilePath = EditorUtility.OpenFolderPanel("Select Folder to Save Class", "Assets", "");
         if (!string.IsNullOrEmpty(classFilePath))
         {
-            string targetFilePath = Path.Combine(classFilePath, "LocalizationConstants.cs");
+            string targetFilePath = Path.Combine(classFilePath, "LocalizationKeys.cs");
 
             // 파일이 이미 존재하는지 확인
             if (File.Exists(targetFilePath))
@@ -118,7 +119,7 @@ public class LocalizationEditor : EditorWindow
                 {
                     // yes를 선택하면 덮어쓰기
                     WriteToFile(targetFilePath, classBuilder.ToString());
-                    EditorUtility.DisplayDialog("Success", "Class file has been successfully overwritten.", "OK"); 
+                    EditorUtility.DisplayDialog("Success", "Enum file has been successfully overwritten.", "OK");
                 }
                 // no를 선택하면 아무것도 하지 않음
             }
@@ -126,7 +127,7 @@ public class LocalizationEditor : EditorWindow
             {
                 // 파일이 존재하지 않으면 바로 쓰기
                 WriteToFile(targetFilePath, classBuilder.ToString());
-                EditorUtility.DisplayDialog("Success", "Class file has been successfully generated.", "OK"); 
+                EditorUtility.DisplayDialog("Success", "Enum file has been successfully generated.", "OK");
             }
         }
     }
